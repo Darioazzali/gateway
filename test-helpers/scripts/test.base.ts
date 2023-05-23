@@ -1,6 +1,6 @@
-import fs = require('fs');
-import path = require('path');
-import https = require('https');
+import fs from 'fs';
+import path from 'path';
+import https from 'https';
 import axios from 'axios';
 import { ConfigManagerV2 } from '../../src/services/config-manager-v2';
 

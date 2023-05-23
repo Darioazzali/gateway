@@ -6,7 +6,7 @@ import {
 import { request } from './test.base';
 
 // constants
-const TOKENS = ['ATOM'];
+const TOKENS = ['LUNA'];
 
 jest.setTimeout(300000); // run for 5 mins
 
