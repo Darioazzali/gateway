@@ -18,7 +18,7 @@ import {
 export namespace CosmosRoutes {
   export const router = Router();
   export const getCosmos = async (request: Request) => {
-    const cosmos = await Cosmos.getInstance(request.body.network);
+    const cosmos = Cosmos.getInstance(request.body.network);
     await cosmos.init();
 
     return cosmos;

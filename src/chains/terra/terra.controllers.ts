@@ -1,26 +1,23 @@
-import { Cosmos } from './terra';
+import { latency, TokenValue, tokenValueToString } from '../../services/base';
+import { HttpException, TOKEN_NOT_SUPPORTED_ERROR_MESSAGE, TOKEN_NOT_SUPPORTED_ERROR_CODE } from '../../services/error-handler';
+import { Terra } from './terra';
 import {
   CosmosBalanceRequest,
   CosmosBalanceResponse,
   CosmosPollRequest,
   CosmosPollResponse,
-} from './cosmos.requests';
-import { latency, TokenValue, tokenValueToString } from '../../services/base';
-import {
-  HttpException,
-  TOKEN_NOT_SUPPORTED_ERROR_CODE,
-  TOKEN_NOT_SUPPORTED_ERROR_MESSAGE,
-} from '../../services/error-handler';
+} from './terra.requests';
 
-const { decodeTxRaw } = require('@cosmjs/proto-signing');
+
+import { decodeTxRaw } from '@cosmjs/proto-signing';
 
 export async function balances(
-  cosmosish: Cosmos,
+  cosmosish: Terra,
   req: CosmosBalanceRequest
 ): Promise<CosmosBalanceResponse | string> {
   const initTime = Date.now();
 
-  const wallet = await cosmosish.getWallet(req.address, 'cosmos');
+  const wallet = await cosmosish.getWallet(req.address, 'terra');
 
   const { tokenSymbols } = req;
 
@@ -67,15 +64,15 @@ export const toCosmosBalances = (
 };
 
 export async function poll(
-  cosmos: Cosmos,
+  terra: Terra,
   req: CosmosPollRequest
 ): Promise<CosmosPollResponse> {
   const initTime = Date.now();
-  const transaction = await cosmos.getTransaction(req.txHash);
-  const currentBlock = await cosmos.getCurrentBlockNumber();
+  const transaction = await terra.getTransaction(req.txHash);
+  const currentBlock = await terra.getCurrentBlockNumber();
 
   return {
-    network: cosmos.chain,
+    network: terra.chain,
     timestamp: initTime,
     txHash: req.txHash,
     currentBlock,

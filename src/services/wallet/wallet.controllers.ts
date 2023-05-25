@@ -110,7 +110,20 @@ export async function addWallet(
         req.privateKey,
         passphrase
       );
-    } else if (connection instanceof Near) {
+    }
+    // else if (connection instanceof Terra) {
+    //   const wallet = await (connection as Terra).getAccountsfromPrivateKey(
+    //     req.privateKey,
+    //     'terra'
+    //   );
+    //   address = wallet.address;
+    //   encryptedPrivateKey = await (connection as Terra).encrypt(
+    //     req.privateKey,
+    //     passphrase
+    //   );
+    // }
+    
+    else if (connection instanceof Near) {
       address = (
         await connection.getWalletFromPrivateKey(
           req.privateKey,

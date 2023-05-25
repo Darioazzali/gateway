@@ -1,36 +1,38 @@
 import axios from 'axios';
 import { promises as fs } from 'fs';
-import { TokenListType, TokenValue, walletPath } from '../../services/base';
 import NodeCache from 'node-cache';
 import fse from 'fs-extra';
-import { ConfigManagerCertPassphrase } from '../../services/config-manager-cert-passphrase';
 import { BigNumber } from 'ethers';
 import { AccountData, DirectSignResponse } from '@cosmjs/proto-signing';
 
 import { IndexedTx, setupIbcExtension } from '@cosmjs/stargate';
+import crypto from 'crypto'
+// const crypto = require('crypto').webcrypto;
+//Terra
+// import { DirectSecp256k1Wallet } from '@cosmjs/proto-signing';
+import {
+  LCDClient,
+  MnemonicKey,
+  RawKey,
+  Wallet,
+} from '@terra-money/feather.js';
+import { toBase64, fromBase64, fromHex } from '@cosmjs/encoding';
+import { TokenListType, walletPath, TokenValue } from '../../services/base';
+import { ConfigManagerCertPassphrase } from '../../services/config-manager-cert-passphrase';
 
-//Cosmos
-import { DirectSecp256k1Wallet } from '@cosmjs/proto-signing';
-const { StargateClient } = require('@cosmjs/stargate');
-const { toBase64, fromBase64, fromHex } = require('@cosmjs/encoding');
-const crypto = require('crypto').webcrypto;
 export interface Token {
   base: string;
-  address: string;
+  //address Not needed for cosmos
   name: string;
   symbol: string;
   decimals: number;
 }
 
-type CosmosWallet = DirectSecp256k1Wallet;
-// export interface CosmosWallet {
-//   privKey: Uint8Array;
-//   pubkey: Uint8Array;
-//   prefix: 'string';
-//   getAccounts(): [AccountData];
-//   signDirect(): DirectSignResponse;
-//   fromKey(): CosmosWallet;
-// }
+type TerraWallet = Wallet;
+export interface TerraAccount {
+  address: string;
+}
+
 
 export interface KeyAlgorithm {
   name: string;
@@ -53,7 +55,7 @@ export type NewBlockHandler = (bn: number) => void;
 
 export type NewDebugMsgHandler = (msg: any) => void;
 
-export class CosmosBase {
+export class TerraBase {
   private _provider;
   protected tokenList: Token[] = [];
   private _tokenMap: Record<string, Token> = {};
@@ -76,7 +78,16 @@ export class CosmosBase {
     tokenListType: TokenListType,
     gasPriceConstant: number
   ) {
-    this._provider = StargateClient.connect(rpcUrl);
+    this._provider = new LCDClient({
+      chainName: {
+        chainID: chainName,
+        gasAdjustment: 1.75,
+        gasPrices: { uluna: gasPriceConstant },
+        lcd: rpcUrl,
+        prefix: 's',
+      },
+    });
+    // this._provider = StargateClient.connect(rpcUrl);
     this.chainName = chainName;
     this.rpcUrl = rpcUrl;
     this.gasPriceConstant = gasPriceConstant;
@@ -107,20 +118,21 @@ export class CosmosBase {
     return this._initPromise;
   }
 
+  // ? IMPLEMENTED, NOT SURE ABOUT THE RESULT
   async loadTokens(
     tokenListSource: string,
     tokenListType: TokenListType
   ): Promise<void> {
-    this.tokenList = await this.getTokenList(tokenListSource, tokenListType);
-
-    if (this.tokenList) {
-      this.tokenList.forEach(
-        (token: Token) => (this._tokenMap[token.symbol] = token)
-      );
-    }
+      this.tokenList = await this.getTokenList(tokenListSource, tokenListType);
+      if (this.tokenList) {
+        this.tokenList.forEach(
+          (token: Token) => (this._tokenMap[token.symbol] = token)
+        );
+      }
   }
 
   // returns a Tokens for a given list source and list type
+  // ? IMPLEMENTED
   async getTokenList(
     tokenListSource: string,
     tokenListType: TokenListType
@@ -134,14 +146,17 @@ export class CosmosBase {
     return tokens;
   }
 
-  // ethereum token lists are large. instead of reloading each time with
-  // getTokenList, we can read the stored tokenList value from when the
-  // object was initiated.
-  public get storedTokenList(): Token[] {
-    return this.tokenList;
-  }
+  // ? No need for this function, not a long token list
+  // // ethereum token lists are large. instead of reloading each time with
+  // // getTokenList, we can read the stored tokenList value from when the
+  // // object was initiated.
+  // // ! TO BE IMPLEMENTED
+  // public get storedTokenList(): Token[] {
+  //   return this.tokenList;
+  // }
 
   // return the Token object for a symbol
+  // ! TO BE IMPLEMENTED
   getTokenForSymbol(symbol: string): Token | null {
     return this._tokenMap[symbol] ? this._tokenMap[symbol] : null;
   }
@@ -149,29 +164,22 @@ export class CosmosBase {
   async getWalletFromPrivateKey(
     privateKey: string,
     prefix: string
-  ): Promise<CosmosWallet> {
-    const wallet = await DirectSecp256k1Wallet.fromKey(
-      fromHex(privateKey),
-      prefix
-    );
-
-    return wallet;
+  ): Promise<TerraWallet> {
+    return this._provider.wallet(new RawKey(Buffer.from(privateKey)));
   }
 
   async getAccountsfromPrivateKey(
     privateKey: string,
     prefix: string
-  ): Promise<AccountData> {
+  ): Promise<string> {
     const wallet = await this.getWalletFromPrivateKey(privateKey, prefix);
 
-    const accounts = await wallet.getAccounts();
-
-    return accounts[0];
+    return wallet.key.accAddress('terra');
   }
 
   // returns Wallet for an address
   // TODO: Abstract-away into base.ts
-  async getWallet(address: string, prefix: string): Promise<CosmosWallet> {
+  async getWallet(address: string, prefix: string): Promise<TerraWallet> {
     const path = `${walletPath}/${this.chainName}`;
 
     const encryptedPrivateKey: EncryptedPrivateKey = JSON.parse(
@@ -229,14 +237,14 @@ export class CosmosBase {
   async encrypt(privateKey: string, password: string): Promise<string> {
     const iv = crypto.getRandomValues(new Uint8Array(16));
     const salt = crypto.getRandomValues(new Uint8Array(16));
-    const keyMaterial = await CosmosBase.getKeyMaterial(password);
+    const keyMaterial = await TerraBase.getKeyMaterial(password);
     const keyAlgorithm = {
       name: 'PBKDF2',
       salt: salt,
       iterations: 500000,
       hash: 'SHA-256',
     };
-    const key = await CosmosBase.getKey(keyAlgorithm, keyMaterial);
+    const key = await TerraBase.getKey(keyAlgorithm, keyMaterial);
     const cipherAlgorithm = {
       name: 'AES-GCM',
       iv: iv,
@@ -270,9 +278,9 @@ export class CosmosBase {
     encryptedPrivateKey: EncryptedPrivateKey,
     password: string,
     prefix: string
-  ): Promise<CosmosWallet> {
-    const keyMaterial = await CosmosBase.getKeyMaterial(password);
-    const key = await CosmosBase.getKey(
+  ): Promise<TerraWallet> {
+    const keyMaterial = await TerraBase.getKeyMaterial(password);
+    const key = await TerraBase.getKey(
       encryptedPrivateKey.keyAlgorithm,
       keyMaterial
     );
@@ -286,25 +294,25 @@ export class CosmosBase {
 
     return await this.getWalletFromPrivateKey(dec.decode(decrypted), prefix);
   }
-
-  async getDenomMetadata(provider: any, denom: string): Promise<any> {
-    return await provider.queryClient.bank.denomMetadata(denom);
+  // Todo Implement
+  async getDenomMetadata(provider: LCDClient, denom: string): Promise<any> {
+    // return await provider.queryClient.bank.denomMetadata(denom);
+     return await provider.bank.denomMetadata(denom);
   }
-
+  // Todo: Implement
   getTokenDecimals(token: any): number {
     return token ? token.denom_units[token.denom_units.length - 1].exponent : 6; // Last denom unit has the decimal amount we need from our list
   }
 
-  async getBalances(wallet: CosmosWallet): Promise<Record<string, TokenValue>> {
+  // Todo: Implement
+  async getBalances(wallet: TerraWallet): Promise<Record<string, TokenValue>> {
     const balances: Record<string, TokenValue> = {};
+    const provider = this._provider;
+    // const accounts = await wallet.getAccounts();
 
-    const provider = await this._provider;
-
-    const accounts = await wallet.getAccounts();
-
-    const { address } = accounts[0];
-
-    const allTokens = await provider.getAllBalances(address);
+    const address = wallet.key.accAddress('terra');
+    const allTokens = await provider.bank.balance(address);
+    const proc = await provider.bank.balance(address);
 
     await Promise.all(
       allTokens.map(async (t: { denom: string; amount: string }) => {
@@ -315,6 +323,10 @@ export class CosmosBase {
 
           // Get base denom by IBC hash
           if (ibcHash) {
+            /*There is a problem here.
+             * Is trying to get the private query Client from
+             * the StargateClient but the class doen't permit that.
+             */
             const { denomTrace } = await setupIbcExtension(
               await provider.queryClient
             ).ibc.transfer.denomTrace(ibcHash);
@@ -338,10 +350,12 @@ export class CosmosBase {
     return balances;
   }
 
+  // Todo: Implement
   // returns a cosmos tx for a txHash
   async getTransaction(id: string): Promise<IndexedTx> {
-    const provider = await this._provider;
-    const transaction = await provider.getTx(id);
+    const provider = this._provider;
+    const transaction = await provider.tx();
+    // const transaction = await provider.getTx(id);
 
     if (!transaction) {
       throw new Error('Transaction not found');
@@ -350,16 +364,19 @@ export class CosmosBase {
     return transaction;
   }
 
+  // Todo: Implement
   public getTokenBySymbol(tokenSymbol: string): Token | undefined {
     return this.tokenList.find(
       (token: Token) => token.symbol.toUpperCase() === tokenSymbol.toUpperCase()
     );
   }
 
+  // Todo: Implement
   public getTokenByBase(base: string): Token | undefined {
     return this.tokenList.find((token: Token) => token.base === base);
   }
 
+  // Todo: Implement
   async getCurrentBlockNumber(): Promise<number> {
     const provider = await this._provider;
 

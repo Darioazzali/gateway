@@ -1,19 +1,13 @@
-import {
-  validateTokenSymbols,
-  mkValidator,
-  mkRequestValidator,
-  RequestValidator,
-  Validator,
-  validateTxHash,
-} from '../../services/validators';
-import { normalizeBech32 } from '@cosmjs/encoding';
+import {  fromBech32 } from '@cosmjs/encoding';
+import { RequestValidator, Validator, mkRequestValidator, mkValidator, validateTokenSymbols, validateTxHash } from '../../services/validators';
 
-export const invalidCosmosAddressError: string =
-  'The spender param is not a valid Cosmos address. (Bech32 format)';
+export const invalidTerraAddressError: string =
+  'The spender param is not a valid Terra address. (Bech32 format)';
 
-export const isValidCosmosAddress = (str: string): boolean => {
+export const isValidTerraAddress = (str: string): boolean => {
   try {
-    normalizeBech32(str);
+    // normalizeBech32(str);
+    fromBech32(str);
 
     return true;
   } catch (e) {
@@ -24,13 +18,13 @@ export const isValidCosmosAddress = (str: string): boolean => {
 // given a request, look for a key called address that is a Cosmos address
 export const validatePublicKey: Validator = mkValidator(
   'address',
-  invalidCosmosAddressError,
-  (val) => typeof val === 'string' && isValidCosmosAddress(val)
+  invalidTerraAddressError,
+  (val) => typeof val === 'string' && isValidTerraAddress(val)
 );
 
-export const validateCosmosBalanceRequest: RequestValidator =
+export const validateTerraBalanceRequest: RequestValidator =
   mkRequestValidator([validatePublicKey, validateTokenSymbols]);
 
-export const validateCosmosPollRequest: RequestValidator = mkRequestValidator([
+export const validateTerraPollRequest: RequestValidator = mkRequestValidator([
   validateTxHash,
 ]);

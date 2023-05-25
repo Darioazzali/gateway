@@ -38,6 +38,7 @@ export async function getStatus(
   let currentBlockNumber: number | undefined;
   let nativeCurrency: string;
 
+  console.log("The chain", req)
   if (req.chain) {
     try {
       connections.push(
@@ -111,6 +112,7 @@ export async function getStatus(
     nativeCurrency = connection.nativeTokenSymbol;
 
     try {
+      // console.log("connectionnnnnnnnnnn", connection)
       currentBlockNumber = await connection.getCurrentBlockNumber();
     } catch (_e) {
       if (await connection.provider.getNetwork()) currentBlockNumber = 1; // necessary for connectors like hedera that do not have concept of blocknumber

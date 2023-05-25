@@ -1,0 +1,10 @@
+{
+  "tokens": [
+    {
+      "base": "uluna",
+      "name": "Luna",
+      "symbol": "luna",
+      "decimals": 6
+    }
+  ]
+}

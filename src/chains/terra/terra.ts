@@ -1,7 +1,10 @@
+// import { TerraBase } from './terra-base';
+// import { getCosmosConfig } from './terra.config';
+// import { getCosmosConfig } from '../../src/chains/cosmos/cosmos.config';
+import { getTerraConfig } from './terra.config';
+import { logger } from 'ethers';
 import { Cosmosish } from '../../services/common-interfaces';
-import { CosmosBase } from './cosmos-base';
-import { getCosmosConfig } from './cosmos.config';
-import { logger } from '../../services/logger';
+import { CosmosBase } from '../cosmos/cosmos-base';
 
 export class Terra extends CosmosBase implements Cosmosish {
   private static _instances: { [name: string]: Terra };
@@ -13,7 +16,7 @@ export class Terra extends CosmosBase implements Cosmosish {
   private _metricTimer;
 
   private constructor(network: string) {
-    const config = getCosmosConfig('terra');
+    const config = getTerraConfig('terra');
     super(
       'terra',
       config.network.rpcURL,

@@ -2,7 +2,7 @@ import 'jest-extended';
 import {
   privateKey,
   publicKey,
-} from '../../test/chains/cosmos/cosmos.validators.test';
+} from '../../test/chains/terra/terra.validators.test';
 import { request } from './test.base';
 
 // constants
@@ -11,12 +11,12 @@ const TOKENS = ['LUNA'];
 jest.setTimeout(300000); // run for 5 mins
 
 export const unitTests = async () => {
-  test('cosmos routes', async () => {
-    await cosmosTests(TOKENS);
+  test('terra routes', async () => {
+    await terraTests(TOKENS);
   });
 };
 
-export const cosmosTests = async (tokens: string[] = []) => {
+export const terraTests = async (tokens: string[] = []) => {
   console.log('\nStarting Cosmos tests');
   console.log('***************************************************');
   console.log('Token symbols used in tests: ', tokens);

@@ -1,12 +1,12 @@
 networks:
   mainnet:
     rpcURL: https://terra-rpc.polkachu.com/
-    tokenListType: URL
+    tokenListType: FILE
     tokenListSource: >-
       https://cosmos-chain-registry-list.vercel.app/list.json
   testnet:
     rpcURL: https://terra-rpc.polkachu.com/
-    tokenListType: URL
+    tokenListType: FILE
     tokenListSource: https://cosmos-chain-registry-list.vercel.app/list.json
 network: mainnet
 nativeCurrencySymbol: LUNA

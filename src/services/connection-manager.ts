@@ -39,6 +39,8 @@ import { DexalotCLOB } from '../connectors/dexalot/dexalot';
 import { Algorand } from '../chains/algorand/algorand';
 import { Cosmos } from '../chains/cosmos/cosmos';
 import { Tinyman } from '../connectors/tinyman/tinyman';
+// import { Terra } from '../chains/terra/terra';
+// import { Terra } from '../chains/terra/terra';
 
 export type ChainUnion =
   | Algorand
@@ -47,6 +49,7 @@ export type ChainUnion =
   | Nearish
   | Injective
   | Xdcish;
+  // | Terra;
 
 export type Chain<T> = T extends Algorand
   ? Algorand
@@ -60,6 +63,8 @@ export type Chain<T> = T extends Algorand
   ? Xdcish
   : T extends Injective
   ? Injective
+  // : T extends Terra
+  // ? Terra
   : never;
 
 export class UnsupportedChainException extends Error {
@@ -79,7 +84,7 @@ export async function getInitializedChain<T>(
   network: string
 ): Promise<Chain<T>> {
   const chainInstance = getChainInstance(chain, network);
-
+  console.log(chainInstance);
   if (chainInstance === undefined) {
     throw new UnsupportedChainException(`unsupported chain ${chain}`);
   }
@@ -96,34 +101,39 @@ export function getChainInstance(
   network: string
 ): ChainUnion | undefined {
   let connection: ChainUnion | undefined;
+  {
+    console.log(network)
+    if (chain === 'algorand') {
+      connection = Algorand.getInstance(network);
+    } else if (chain === 'ethereum') {
+      connection = Ethereum.getInstance(network);
+    } else if (chain === 'avalanche') {
+      connection = Avalanche.getInstance(network);
+    } else if (chain === 'harmony') {
+      connection = Harmony.getInstance(network);
+    } else if (chain === 'polygon') {
+      connection = Polygon.getInstance(network);
+    } else if (chain === 'cronos') {
+      connection = Cronos.getInstance(network);
+    } else if (chain === 'cosmos') {
+      connection = Cosmos.getInstance(network);
+    } else if (chain === 'near') {
+      connection = Near.getInstance(network);
+    // } else if (chain === 'terra') {
+    //   console.log('bella frate');
+    //   connection = Terra.getInstance(network);
+    } else if (chain === 'binance-smart-chain') {
+      connection = BinanceSmartChain.getInstance(network);
+    } else if (chain === 'xdc') {
+      connection = Xdc.getInstance(network);
+    } else if (chain === 'injective') {
+      connection = Injective.getInstance(network);
+    } else {
+      connection = undefined;
+    }
 
-  if (chain === 'algorand') {
-    connection = Algorand.getInstance(network);
-  } else if (chain === 'ethereum') {
-    connection = Ethereum.getInstance(network);
-  } else if (chain === 'avalanche') {
-    connection = Avalanche.getInstance(network);
-  } else if (chain === 'harmony') {
-    connection = Harmony.getInstance(network);
-  } else if (chain === 'polygon') {
-    connection = Polygon.getInstance(network);
-  } else if (chain === 'cronos') {
-    connection = Cronos.getInstance(network);
-  } else if (chain === 'cosmos') {
-    connection = Cosmos.getInstance(network);
-  } else if (chain === 'near') {
-    connection = Near.getInstance(network);
-  } else if (chain === 'binance-smart-chain') {
-    connection = BinanceSmartChain.getInstance(network);
-  } else if (chain === 'xdc') {
-    connection = Xdc.getInstance(network);
-  } else if (chain === 'injective') {
-    connection = Injective.getInstance(network);
-  } else {
-    connection = undefined;
+    return connection;
   }
-
-  return connection;
 }
 
 export type ConnectorUnion =

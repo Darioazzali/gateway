@@ -1,24 +1,24 @@
 /* eslint-disable @typescript-eslint/ban-types */
 import { NextFunction, Router, Request, Response } from 'express';
-import { verifyCosmosIsAvailable } from './cosmos-middlewares';
-import { asyncHandler } from '../../services/error-handler';
+import { verifyCosmosIsAvailable } from './terra-middlewares';
 import { Terra } from './terra';
-import { balances, poll } from './cosmos.controllers';
+import { balances, poll } from './terra.controllers';
 import {
   CosmosBalanceResponse,
   CosmosBalanceRequest,
   CosmosPollRequest,
   CosmosPollResponse,
-} from './cosmos.requests';
+} from './terra.requests';
 import {
-  validateCosmosBalanceRequest,
-  validateCosmosPollRequest,
+  validateTerraBalanceRequest,
+  validateTerraPollRequest,
 } from './terra.validators';
+import { asyncHandler } from '../../services/error-handler';
 
 export namespace CosmosRoutes {
   export const router = Router();
   export const getCosmos = async (request: Request) => {
-    const cosmos = await Terra.getInstance(request.body.network);
+    const cosmos = Terra.getInstance(request.body.network);
     await cosmos.init();
 
     return cosmos;
@@ -50,7 +50,7 @@ export namespace CosmosRoutes {
         _next: NextFunction
       ) => {
         const cosmos = await getCosmos(req);
-        validateCosmosBalanceRequest(req.body);
+        validateTerraBalanceRequest(req.body);
         res.status(200).json(await balances(cosmos, req.body));
       }
     )
@@ -66,7 +66,7 @@ export namespace CosmosRoutes {
       ) => {
         const cosmos = await getCosmos(req);
 
-        validateCosmosPollRequest(req.body);
+        validateTerraPollRequest(req.body);
         res.status(200).json(await poll(cosmos, req.body));
       }
     )
